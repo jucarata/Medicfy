@@ -1,0 +1,24 @@
+{
+  "name": "medicfy",
+  "version": "1.0.0",
+  "description": "Recordatorios de medicamentos por WhatsApp",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "start": "node ./dist/server/entry.mjs",
+    "preview": "astro preview"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.2.2",
+    "astro": "^5.9.0",
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.16",
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

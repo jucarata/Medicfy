@@ -1,0 +1,19 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout>
+  <div class="container db-page">
+    <header class="db-header">
+      <h1>Base de datos</h1>
+      <p class="hint">Vista de administración de todas las tablas y registros del sistema.</p>
+      <button type="button" id="db-refresh" class="secondary">Actualizar</button>
+    </header>
+
+    <div id="db-loading" class="db-loading">Cargando datos…</div>
+    <div id="db-error" class="db-error hidden"></div>
+    <div id="db-tables" class="db-tables hidden"></div>
+  </div>
+</Layout>
+
+<script src="../scripts/database.ts"></script>

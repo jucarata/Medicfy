@@ -1,0 +1,123 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { COUNTRY_CODES, DEFAULT_COUNTRY_DIAL } from '../lib/countryCodes.ts';
+---
+
+<Layout>
+  <div class="container">
+    <header>
+      <p class="subtitle">Recordatorios de medicamentos por WhatsApp</p>
+    </header>
+
+    <div class="dashboard">
+      <div class="config-panel">
+        <section class="card">
+          <h2>Número destino</h2>
+          <div class="form-row phone-row">
+            <select id="recipient-country" class="country-select" aria-label="Código de país">
+              {COUNTRY_CODES.map(({ name, dial }) => (
+                <option value={dial} selected={dial === DEFAULT_COUNTRY_DIAL}>
+                  {name} (+{dial})
+                </option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              id="recipient-input"
+              inputmode="numeric"
+              placeholder="3001234567"
+              autocomplete="tel-national"
+            />
+            <button type="button" id="edit-recipient" class="icon-btn hidden" aria-label="Editar número destino" title="Editar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
+            <button type="button" id="save-recipient">Guardar</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Nueva notificación</h2>
+          <form id="schedule-form" class="schedule-form">
+            <input type="time" id="schedule-time" required />
+            <input
+              type="text"
+              id="schedule-message"
+              placeholder="Ej: Abuelita, es hora de tomar tu medicamento"
+              required
+            />
+            <button type="submit">Agregar</button>
+          </form>
+        </section>
+
+        <section class="card">
+          <h2>Correo de alertas</h2>
+          <p class="hint">
+            Correo donde recibirás las alertas (desconexión de WhatsApp o fallos de envío).
+          </p>
+          <p class="hint" id="email-smtp-hint"></p>
+          <div class="form-row email-row">
+            <input
+              type="email"
+              id="alert-email-input"
+              placeholder="tu@correo.com"
+              autocomplete="email"
+              aria-label="Correo destino para alertas"
+            />
+            <button type="button" id="edit-alert-email" class="icon-btn hidden" aria-label="Editar correo de alertas" title="Editar">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </button>
+            <button type="button" id="save-alert-email">Guardar</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Historial reciente</h2>
+          <ul id="log-list" class="log-list"></ul>
+        </section>
+      </div>
+
+      <aside class="qr-panel">
+        <section class="card qr-card">
+          <h2>WhatsApp</h2>
+          <div id="qr-status-layout" class="qr-status-layout">
+            <div id="qr-container" class="hidden">
+              <p class="hint">Escanea este código con WhatsApp en tu teléfono:</p>
+              <img id="qr-image" alt="Código QR de WhatsApp" />
+            </div>
+            <p id="qr-waiting" class="hint">Generando código QR…</p>
+            <div class="status-block">
+              <span class="badge disconnected" id="status-badge">Desconectado</span>
+              <p id="status-detail" class="status-detail"></p>
+              <p id="connected-number" class="connected-number"></p>
+            </div>
+          </div>
+          <div id="disconnect-section" class="test-send-section hidden">
+            <button type="button" id="disconnect-wa" class="danger test-send-btn">
+              Desconectar WhatsApp
+            </button>
+          </div>
+          <div id="test-send-section" class="test-send-section hidden">
+            <button type="button" id="test-send" class="secondary test-send-btn">
+              Enviar mensaje de prueba
+            </button>
+          </div>
+        </section>
+
+        <section class="card scheduled-notifications-card">
+          <h2>Notificaciones programadas</h2>
+          <p class="hint">Se envían automáticamente todos los días a la hora de Colombia.</p>
+          <ul id="schedule-list" class="notification-list"></ul>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script src="../scripts/dashboard.ts"></script>
+</Layout>
