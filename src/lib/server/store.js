@@ -74,19 +74,29 @@ export function replaceSettings(settings) {
   });
 }
 
+function normalizeScheduleFromClient(schedule, existing = null) {
+  const duration = schedule.duration_days;
+  return {
+    id: schedule.id,
+    time: schedule.time,
+    message: schedule.message,
+    enabled: schedule.enabled ?? 1,
+    duration_days: duration && duration > 0 ? duration : null,
+    send_count: Math.max(existing?.send_count ?? 0, schedule.send_count ?? 0),
+    created_at: schedule.created_at || existing?.created_at || new Date().toISOString(),
+  };
+}
+
 export function getSchedules() {
   return loadStore().schedules.slice().sort((a, b) => a.time.localeCompare(b.time));
 }
 
 export function replaceSchedules(schedules) {
   return withStore((store) => {
-    store.schedules = schedules.map((s) => ({
-      id: s.id,
-      time: s.time,
-      message: s.message,
-      enabled: s.enabled ?? 1,
-      created_at: s.created_at || new Date().toISOString(),
-    }));
+    store.schedules = schedules.map((s) => {
+      const existing = store.schedules.find((item) => item.id === s.id);
+      return normalizeScheduleFromClient(s, existing);
+    });
   });
 }
 
@@ -94,13 +104,41 @@ export function getSchedule(id) {
   return loadStore().schedules.find((s) => s.id === id) || null;
 }
 
-export function createSchedule(time, message) {
+export function scheduleCanSend(schedule) {
+  if (!schedule.enabled) return false;
+  const limit = schedule.duration_days;
+  if (!limit || limit <= 0) return true;
+  return (schedule.send_count || 0) < limit;
+}
+
+export function incrementSendCount(id) {
   return withStore((store) => {
+    const index = store.schedules.findIndex((s) => s.id === id);
+    if (index === -1) return null;
+
+    const schedule = store.schedules[index];
+    const newCount = (schedule.send_count || 0) + 1;
+    schedule.send_count = newCount;
+
+    const limit = schedule.duration_days;
+    if (limit && limit > 0 && newCount >= limit) {
+      schedule.enabled = 0;
+    }
+
+    return schedule;
+  });
+}
+
+export function createSchedule(time, message, durationDays = null) {
+  return withStore((store) => {
+    const duration = durationDays && durationDays > 0 ? durationDays : null;
     const schedule = {
       id: nextId(store.schedules),
       time,
       message,
       enabled: 1,
+      duration_days: duration,
+      send_count: 0,
       created_at: new Date().toISOString(),
     };
     store.schedules.push(schedule);
@@ -108,17 +146,26 @@ export function createSchedule(time, message) {
   });
 }
 
-export function updateSchedule(id, { time, message, enabled }) {
+export function updateSchedule(id, { time, message, enabled, duration_days, send_count }) {
   return withStore((store) => {
     const index = store.schedules.findIndex((s) => s.id === id);
     if (index === -1) return null;
 
     const existing = store.schedules[index];
+    const duration =
+      duration_days !== undefined
+        ? duration_days && duration_days > 0
+          ? duration_days
+          : null
+        : existing.duration_days ?? null;
+
     const updated = {
       ...existing,
       time: time ?? existing.time,
       message: message ?? existing.message,
       enabled: enabled ?? existing.enabled,
+      duration_days: duration,
+      send_count: send_count ?? existing.send_count ?? 0,
     };
     store.schedules[index] = updated;
     return updated;
@@ -166,13 +213,10 @@ export function syncFromClient({ settings, schedules }) {
       store.settings = { ...settings };
     }
     if (Array.isArray(schedules)) {
-      store.schedules = schedules.map((s) => ({
-        id: s.id,
-        time: s.time,
-        message: s.message,
-        enabled: s.enabled ?? 1,
-        created_at: s.created_at || new Date().toISOString(),
-      }));
+      store.schedules = schedules.map((s) => {
+        const existing = store.schedules.find((item) => item.id === s.id);
+        return normalizeScheduleFromClient(s, existing);
+      });
     }
   });
 }

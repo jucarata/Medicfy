@@ -449,6 +449,37 @@ button.small { padding: 0.35rem 0.6rem; font-size: 0.8rem; }
   user-select: none;
 }
 
+#schedule-duration {
+  flex: 0 1 7rem;
+  min-width: 6rem;
+}
+
+.schedule-duration-hint {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
+.notification-progress {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+
+.notification-complete {
+  border-left-color: #64748b;
+  background: #f1f5f9;
+}
+
+.notification-complete .notification-progress {
+  color: var(--muted);
+}
+
+.notification-disabled .notification-progress {
+  color: var(--muted);
+  font-weight: 500;
+}
+
 .notification-enable input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
@@ -457,8 +488,8 @@ button.small { padding: 0.35rem 0.6rem; font-size: 0.8rem; }
   flex-shrink: 0;
 }
 
-.scheduled-notifications-card h2 {
-  margin-bottom: 0.35rem;
+.notification-enable input[type="checkbox"]:disabled {
+  cursor: not-allowed;
 }
 
 .scheduled-notifications-card .hint {

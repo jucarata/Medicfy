@@ -29,7 +29,7 @@ function markSentToday(scheduleId, time) {
 }
 
 async function processSchedule(schedule) {
-  if (!schedule.enabled) return;
+  if (!store.scheduleCanSend(schedule)) return;
 
   const recipient = store.getSetting('recipient_phone');
   if (!recipient) {
@@ -44,6 +44,7 @@ async function processSchedule(schedule) {
   try {
     await whatsapp.sendMessage(recipient, schedule.message);
     markSentToday(schedule.id, schedule.time);
+    store.incrementSendCount(schedule.id);
     store.logSend(schedule.id, 'sent');
     console.log(`[scheduler] Enviado recordatorio de las ${schedule.time}`);
   } catch (err) {
@@ -74,7 +75,7 @@ function getCurrentTime() {
 export function startScheduler() {
   cron.schedule('* * * * *', () => {
     const currentTime = getCurrentTime();
-    const schedules = store.getSchedules().filter((s) => s.enabled && s.time === currentTime);
+    const schedules = store.getSchedules().filter((s) => s.time === currentTime && store.scheduleCanSend(s));
     schedules.forEach((schedule) => {
       processSchedule(schedule);
     });

@@ -48,8 +48,16 @@ import { COUNTRY_CODES, DEFAULT_COUNTRY_DIAL } from '../lib/countryCodes.ts';
               placeholder="Ej: Abuelita, es hora de tomar tu medicamento"
               required
             />
+            <input
+              type="number"
+              id="schedule-duration"
+              min="1"
+              placeholder="Días (opcional)"
+              aria-label="Cantidad de días programados"
+            />
             <button type="submit">Agregar</button>
           </form>
+          <p class="hint schedule-duration-hint">Sin días = sin límite. Solo cuentan los envíos exitosos.</p>
         </section>
 
         <section class="card">

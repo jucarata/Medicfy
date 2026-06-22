@@ -8,7 +8,7 @@ export const GET: APIRoute = () => {
 
 export const POST: APIRoute = async ({ request }) => {
   const body = await request.json();
-  const { time, message } = body;
+  const { time, message, duration_days: durationDays } = body;
 
   if (!time || !message) {
     return error('Hora y mensaje son obligatorios');
@@ -17,6 +17,14 @@ export const POST: APIRoute = async ({ request }) => {
     return error('La hora debe tener formato HH:MM (ej: 08:00)');
   }
 
-  const schedule = store.createSchedule(time, message.trim());
+  const duration =
+    durationDays !== undefined && durationDays !== null && durationDays !== ''
+      ? Number(durationDays)
+      : null;
+  if (duration !== null && (!Number.isInteger(duration) || duration < 1)) {
+    return error('Los días deben ser un número entero mayor a 0');
+  }
+
+  const schedule = store.createSchedule(time, message.trim(), duration);
   return json(schedule, 201);
 };

@@ -8,6 +8,7 @@ import {
   deleteSchedule,
   getSchedules,
   getSetting,
+  mergeSchedulesFromServer,
   setSetting,
   syncToServer,
   updateSchedule,
@@ -229,6 +230,25 @@ function escapeHtml(str: string) {
   return div.innerHTML;
 }
 
+function isScheduleComplete(schedule: Schedule): boolean {
+  const limit = schedule.duration_days;
+  if (!limit || limit <= 0) return false;
+  return (schedule.send_count || 0) >= limit;
+}
+
+function formatScheduleStatus(schedule: Schedule): string {
+  const count = schedule.send_count || 0;
+  const limit = schedule.duration_days;
+
+  if (limit && limit > 0) {
+    if (count >= limit) return `Completada — ${limit}/${limit} días`;
+    if (!schedule.enabled) return `Pausada — ${count}/${limit} días enviados`;
+    return `${count}/${limit} días enviados`;
+  }
+
+  return schedule.enabled ? 'Sin límite — se envía todos los días' : 'Pausada — no se enviará';
+}
+
 function renderSchedules(schedules: Schedule[]) {
   const list = document.getElementById('schedule-list');
   if (!list) return;
@@ -239,9 +259,17 @@ function renderSchedules(schedules: Schedule[]) {
   }
 
   list.innerHTML = schedules
-    .map(
-      (s) => `
-    <li class="notification-box${s.enabled ? '' : ' notification-disabled'}" data-id="${s.id}">
+    .map((s) => {
+      const complete = isScheduleComplete(s);
+      const statusText = formatScheduleStatus(s);
+      const boxClass = complete
+        ? ' notification-complete'
+        : s.enabled
+          ? ''
+          : ' notification-disabled';
+
+      return `
+    <li class="notification-box${boxClass}" data-id="${s.id}">
       <button type="button" class="notification-delete delete-schedule" aria-label="Eliminar notificación" title="Eliminar">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
           <path d="M18 6 6 18" />
@@ -253,13 +281,14 @@ function renderSchedules(schedules: Schedule[]) {
         <span class="notification-box-sep" aria-hidden="true">|</span>
         <p class="notification-box-message">${escapeHtml(s.message)}</p>
       </div>
+      <p class="notification-progress">${escapeHtml(statusText)}</p>
       <label class="notification-enable">
-        <input type="checkbox" class="toggle-schedule" ${s.enabled ? 'checked' : ''}>
-        <span>${s.enabled ? 'Activa — se envía todos los días' : 'Pausada — no se enviará'}</span>
+        <input type="checkbox" class="toggle-schedule" ${s.enabled ? 'checked' : ''} ${complete ? 'disabled' : ''}>
+        <span>${complete ? 'Programación finalizada' : s.enabled ? 'Activa' : 'Pausada'}</span>
       </label>
     </li>
-  `
-    )
+  `;
+    })
     .join('');
 }
 
@@ -285,6 +314,9 @@ function renderLogs(logs: LogEntry[]) {
 async function refresh() {
   try {
     const status = await api<StatusResponse>('/api/status');
+    const serverSchedules = await api<Schedule[]>('/api/schedules');
+    await mergeSchedulesFromServer(serverSchedules);
+
     const [recipient, alertEmail, schedules, logs] = await Promise.all([
       getSetting('recipient_phone', ''),
       getSetting('alert_email', ''),
@@ -349,18 +381,27 @@ document.getElementById('schedule-form')?.addEventListener('submit', async (e) =
   e.preventDefault();
   const time = (document.getElementById('schedule-time') as HTMLInputElement).value;
   const messageInput = document.getElementById('schedule-message') as HTMLInputElement;
+  const durationInput = document.getElementById('schedule-duration') as HTMLInputElement;
   const message = messageInput.value.trim();
+  const durationRaw = durationInput.value.trim();
+  const durationDays = durationRaw ? Number(durationRaw) : null;
 
   if (!/^\d{2}:\d{2}$/.test(time)) {
     showToast('La hora debe tener formato HH:MM', true);
     return;
   }
 
+  if (durationDays !== null && (!Number.isInteger(durationDays) || durationDays < 1)) {
+    showToast('Los días deben ser un número entero mayor a 0', true);
+    return;
+  }
+
   try {
-    await createSchedule(time, message);
+    await createSchedule(time, message, durationDays);
     await syncToServer();
     messageInput.value = '';
-    showToast('Horario agregado');
+    durationInput.value = '';
+    showToast('Notificación programada');
     await refresh();
   } catch (err) {
     showToast(err instanceof Error ? err.message : 'Error', true);
